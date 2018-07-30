@@ -31,6 +31,7 @@ public class SongAdapter extends RecyclerView.Adapter<SongAdapter.SongViewHolder
     @Override
     public void onBindViewHolder(@NonNull SongViewHolder holder, int position) {
         holder.bindData(mSongs.get(position));
+        holder.itemView.setTag(position);
     }
 
     @Override
@@ -44,7 +45,6 @@ public class SongAdapter extends RecyclerView.Adapter<SongAdapter.SongViewHolder
 
         public SongViewHolder(@NonNull View itemView) {
             super(itemView);
-
             mTitleTextView = itemView.findViewById(R.id.text_title);
             mArtistTextView = itemView.findViewById(R.id.text_artist);
         }
