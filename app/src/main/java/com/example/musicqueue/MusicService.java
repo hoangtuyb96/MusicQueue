@@ -1,6 +1,7 @@
 package com.example.musicqueue;
 
 import android.app.Notification;
+import android.app.NotificationManager;
 import android.app.PendingIntent;
 import android.app.Service;
 import android.content.BroadcastReceiver;
@@ -20,6 +21,8 @@ import java.util.ArrayList;
 
 public class MusicService extends Service implements MediaPlayer.OnPreparedListener,
     MediaPlayer.OnErrorListener, MediaPlayer.OnCompletionListener {
+    public static final String ACTION_PLAY_MUSIC  = "ACTION_PLAY_MUSIC";
+
     private MediaPlayer mMediaPlayer;
     private ArrayList<Song> songList;
     private int songPosn;
@@ -34,10 +37,16 @@ public class MusicService extends Service implements MediaPlayer.OnPreparedListe
         initMusicPlayer();
         setList(new SongManager().getSongList(MusicApplication.getAppContext()));
 
-        IntentFilter filter = new IntentFilter();
-        filter.addAction(MainActivity.ACTION_PLAY);
-        mReceiver = new MyReceiver();
-        registerReceiver(mReceiver, filter);
+//        IntentFilter filter = new IntentFilter();
+//        filter.addAction(MainActivity.ACTION_PLAY);
+//        mReceiver = new MyReceiver();
+//        registerReceiver(mReceiver, filter);
+    }
+
+    @Override
+    public int onStartCommand(Intent intent, int flags, int startId) {
+        handleIntent(intent);
+        return super.onStartCommand(intent, flags, startId);
     }
 
     public void initMusicPlayer() {
@@ -76,6 +85,15 @@ public class MusicService extends Service implements MediaPlayer.OnPreparedListe
         mMediaPlayer.start();
     }
 
+    private void handleIntent(Intent intent){
+        switch (intent.getAction()){
+            case ACTION_PLAY_MUSIC:
+                setSong(intent.getIntExtra(MainActivity.INDEX_MP3, 0));
+                playSong();
+                break;
+        }
+    }
+
     @Override
     public void onCompletion(MediaPlayer mediaPlayer) {
 
@@ -89,7 +107,6 @@ public class MusicService extends Service implements MediaPlayer.OnPreparedListe
     @Override
     public void onPrepared(MediaPlayer mediaPlayer) {
         mediaPlayer.start();
-
     }
 
     public class MusicBinder extends Binder {
@@ -128,11 +145,9 @@ public class MusicService extends Service implements MediaPlayer.OnPreparedListe
     }
 
     private void playSong() {
-        Log.e("pos", songPosn+"");
         Song playSong = songList.get(songPosn);
         try {
             mMediaPlayer.reset();
-            Log.e("song_path", playSong.getPath()+"");
             mMediaPlayer.setDataSource(playSong.getPath());
             mMediaPlayer.prepare();
             createNotification(playSong.getTitle());
@@ -147,6 +162,7 @@ public class MusicService extends Service implements MediaPlayer.OnPreparedListe
     }
 
     private void createNotification(String title) {
+        Log.e("asdfghj", "sdfghj");
         Intent notIntent = new Intent(this, MainActivity.class);
         notIntent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP);
         PendingIntent pendInt = PendingIntent.getActivity(this, 0,
@@ -162,6 +178,13 @@ public class MusicService extends Service implements MediaPlayer.OnPreparedListe
         Notification not = builder.build();
 
         startForeground(NOTIFY_ID, not);
+        /*
+        NotificationManager mNotificationManager = (NotificationManager)
+                getSystemService(Context.NOTIFICATION_SERVICE);
+        mNotificationManager.createNotificationChannel(mChannel);
+
+        mNotificationManager.notify(NOTIFY_ID, not);
+        */
     }
 
     BroadcastReceiver mReceiver;

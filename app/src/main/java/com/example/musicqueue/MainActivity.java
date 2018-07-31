@@ -1,6 +1,7 @@
 package com.example.musicqueue;
 
 import android.content.Intent;
+import android.os.Build;
 import android.os.Bundle;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.LinearLayoutManager;
@@ -11,6 +12,8 @@ import android.view.View;
 import android.widget.MediaController;
 
 import java.util.ArrayList;
+
+import static com.example.musicqueue.MusicService.ACTION_PLAY_MUSIC;
 
 public class MainActivity extends AppCompatActivity implements MediaController.MediaPlayerControl {
     public static final String ACTION_PLAY = "action_play";
@@ -33,10 +36,17 @@ public class MainActivity extends AppCompatActivity implements MediaController.M
         songList = new SongManager().getSongList(this);
         mSongAdapter = new SongAdapter(this, songList);
 
-        if (playIntent == null) {
-            playIntent = new Intent(this, MusicService.class);
-            startService(playIntent);
-        }
+//        if (playIntent == null) {
+//            playIntent = new Intent(this, MusicService.class);
+//            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+//                startForegroundService(playIntent);
+//            }
+//            else
+//            {
+//                startService(playIntent);
+//            }
+//
+//        }
 
 
         mRecyclerViewSongs.setAdapter(mSongAdapter);
@@ -49,9 +59,20 @@ public class MainActivity extends AppCompatActivity implements MediaController.M
     }
 
     public void songSelected(View view) {
-        Intent intent = new Intent(ACTION_PLAY);
-        intent.putExtra(INDEX_MP3, Integer.parseInt(view.getTag().toString()));
-        sendBroadcast(intent);
+
+
+        playIntent = new Intent(this, MusicService.class);
+        playIntent.setAction(ACTION_PLAY_MUSIC);
+        playIntent.putExtra(INDEX_MP3, Integer.parseInt(view.getTag().toString()));
+
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            startForegroundService(playIntent);
+        }
+        else
+        {
+            startService(playIntent);
+        }
+
     }
 
     @Override
