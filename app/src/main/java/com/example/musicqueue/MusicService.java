@@ -20,21 +20,19 @@ import java.util.ArrayList;
 
 public class MusicService extends Service implements MediaPlayer.OnPreparedListener,
     MediaPlayer.OnErrorListener, MediaPlayer.OnCompletionListener {
-    private MediaPlayer player;
+    private MediaPlayer mMediaPlayer;
     private ArrayList<Song> songList;
     private int songPosn;
     private final IBinder musicBind = new MusicBinder();
     private String songTitle = "";
     private static final int NOTIFY_ID = 1;
-    private ServiceCallbacks serviceCallbacks;
 
     public void onCreate() {
         super.onCreate();
         songPosn = 0;
-        player = new MediaPlayer();
+        mMediaPlayer = new MediaPlayer();
         initMusicPlayer();
-        Log.e("asdfg",serviceCallbacks+"");
-        setList(serviceCallbacks.getSongList());
+        setList(new SongManager().getSongList(MusicApplication.getAppContext()));
 
         IntentFilter filter = new IntentFilter();
         filter.addAction(MainActivity.ACTION_PLAY);
@@ -43,11 +41,11 @@ public class MusicService extends Service implements MediaPlayer.OnPreparedListe
     }
 
     public void initMusicPlayer() {
-        player.setWakeMode(getApplicationContext(), PowerManager.PARTIAL_WAKE_LOCK);
-        player.setAudioStreamType(AudioManager.STREAM_MUSIC);
-        player.setOnPreparedListener(this);
-        player.setOnCompletionListener(this);
-        player.setOnErrorListener(this);
+        mMediaPlayer.setWakeMode(getApplicationContext(), PowerManager.PARTIAL_WAKE_LOCK);
+        mMediaPlayer.setAudioStreamType(AudioManager.STREAM_MUSIC);
+        mMediaPlayer.setOnPreparedListener(this);
+        mMediaPlayer.setOnCompletionListener(this);
+        mMediaPlayer.setOnErrorListener(this);
     }
 
     public void setList(ArrayList<Song> theSongs) {
@@ -55,27 +53,27 @@ public class MusicService extends Service implements MediaPlayer.OnPreparedListe
     }
 
     public int getPosn(){
-        return player.getCurrentPosition();
+        return mMediaPlayer.getCurrentPosition();
     }
 
     public int getDur(){
-        return player.getDuration();
+        return mMediaPlayer.getDuration();
     }
 
     public boolean isPng(){
-        return player.isPlaying();
+        return mMediaPlayer.isPlaying();
     }
 
     public void pausePlayer(){
-        player.pause();
+        mMediaPlayer.pause();
     }
 
     public void seek(int posn){
-        player.seekTo(posn);
+        mMediaPlayer.seekTo(posn);
     }
 
     public void go(){
-        player.start();
+        mMediaPlayer.start();
     }
 
     @Override
@@ -108,8 +106,8 @@ public class MusicService extends Service implements MediaPlayer.OnPreparedListe
 
     @Override
     public boolean onUnbind(Intent intent) {
-        player.stop();
-        player.release();
+        mMediaPlayer.stop();
+        mMediaPlayer.release();
         return false;
     }
 
@@ -129,10 +127,14 @@ public class MusicService extends Service implements MediaPlayer.OnPreparedListe
         songPosn = songIndex;
     }
 
-    private void playSong() {Song playSong = songList.get(songPosn);
+    private void playSong() {
+        Log.e("pos", songPosn+"");
+        Song playSong = songList.get(songPosn);
         try {
-            player.reset();
-            player.prepare();
+            mMediaPlayer.reset();
+            Log.e("song_path", playSong.getPath()+"");
+            mMediaPlayer.setDataSource(playSong.getPath());
+            mMediaPlayer.prepare();
             createNotification(playSong.getTitle());
         } catch (IllegalArgumentException e) {
             e.printStackTrace();
@@ -160,10 +162,6 @@ public class MusicService extends Service implements MediaPlayer.OnPreparedListe
         Notification not = builder.build();
 
         startForeground(NOTIFY_ID, not);
-    }
-
-    public void setCallbacks(ServiceCallbacks callbacks) {
-        serviceCallbacks = callbacks;
     }
 
     BroadcastReceiver mReceiver;

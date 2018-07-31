@@ -1,14 +1,7 @@
 package com.example.musicqueue;
 
-import android.content.ComponentName;
-import android.content.ContentResolver;
-import android.content.Context;
 import android.content.Intent;
-import android.content.ServiceConnection;
-import android.database.Cursor;
-import android.net.Uri;
 import android.os.Bundle;
-import android.os.IBinder;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
@@ -19,20 +12,17 @@ import android.widget.MediaController;
 
 import java.util.ArrayList;
 
-public class MainActivity extends AppCompatActivity implements MediaController.MediaPlayerControl,
-    ServiceCallbacks {
+public class MainActivity extends AppCompatActivity implements MediaController.MediaPlayerControl {
     public static final String ACTION_PLAY = "action_play";
     public static final String INDEX_MP3 = "index_mp3";
 
     private RecyclerView mRecyclerViewSongs;
     private SongAdapter mSongAdapter;
-    private ArrayList<Song> mSongs;
+    private ArrayList<Song> songList;
     private MusicController musicController;
     private MusicService musicService;
     private boolean musicBound = false;
     private Intent playIntent;
-    private boolean bound;
-    private ServiceConnection serviceConnection;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -40,14 +30,12 @@ public class MainActivity extends AppCompatActivity implements MediaController.M
         setContentView(R.layout.activity_main);
 
         mRecyclerViewSongs = findViewById(R.id.rv_songs);
-        mSongs = new ArrayList<>();
-        mSongAdapter = new SongAdapter(this, getSongList());
-        connectService();
+        songList = new SongManager().getSongList(this);
+        mSongAdapter = new SongAdapter(this, songList);
 
         if (playIntent == null) {
             playIntent = new Intent(this, MusicService.class);
-            bindService(playIntent, serviceConnection, Context.BIND_AUTO_CREATE);
-            //startService(playIntent);
+            startService(playIntent);
         }
 
 
@@ -84,52 +72,6 @@ public class MainActivity extends AppCompatActivity implements MediaController.M
                 break;
         }
         return super.onOptionsItemSelected(item);
-    }
-
-    private void connectService() {
-        serviceConnection = new ServiceConnection() {
-
-            @Override
-            public void onServiceConnected(ComponentName className, IBinder service) {
-                // cast the IBinder and get MyService instance
-                MusicService.MusicBinder binder = (MusicService.MusicBinder) service;
-                musicService = binder.getService();
-                bound = true;
-                musicService.setCallbacks(MainActivity.this); // register
-                //musicService.setServiceCallbacks(MainActivity.this);
-            }
-
-            @Override
-            public void onServiceDisconnected(ComponentName arg0) {
-                bound = false;
-            }
-        };
-    }
-
-    @Override
-    public ArrayList<Song> getSongList() {
-        ContentResolver musicResolver = getContentResolver();
-        Uri musicUri = android.provider.MediaStore.Audio.Media.EXTERNAL_CONTENT_URI;
-        Cursor musicCursor = musicResolver.query(musicUri, null, null, null, null);
-
-        if(musicCursor!=null && musicCursor.moveToFirst()){
-            //get columns
-            int titleColumn = musicCursor.getColumnIndex
-                    (android.provider.MediaStore.Audio.Media.TITLE);
-            int idColumn = musicCursor.getColumnIndex
-                    (android.provider.MediaStore.Audio.Media._ID);
-            int artistColumn = musicCursor.getColumnIndex
-                    (android.provider.MediaStore.Audio.Media.ARTIST);
-            //add songs to list
-            do {
-                long thisId = musicCursor.getLong(idColumn);
-                String thisTitle = musicCursor.getString(titleColumn);
-                String thisArtist = musicCursor.getString(artistColumn);
-                mSongs.add(new Song(thisId, thisTitle, thisArtist));
-            }
-            while (musicCursor.moveToNext());
-        }
-        return mSongs;
     }
 
     private void setMusicController() {
